@@ -64,10 +64,8 @@ void VertexPerformanceConfigInfo::endJob() {
   info->AddBinContent(bin, energy);
   ++bin;
 
-  if(dataVersion.length() > 0)
-    fs->make<TNamed>("dataVersion", dataVersion.c_str());
-  if(codeVersion.length() > 0)
-    fs->make<TNamed>("codeVersion", codeVersion.c_str());
+  fs->make<TNamed>("dataVersion", dataVersion.c_str());
+  fs->make<TNamed>("codeVersion", codeVersion.c_str());
   if(era.length() > 0)
     fs->make<TNamed>("era", era.c_str());
 }

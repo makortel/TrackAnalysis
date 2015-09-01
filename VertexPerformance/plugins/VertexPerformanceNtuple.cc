@@ -142,9 +142,35 @@ private:
       tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
       tree->Branch((prefix+"_sumpt").c_str(), &sumpt); 
       tree->Branch((prefix+"_sumpt2").c_str(), &sumpt2);
-   }
+    }
 
     void append(const reco::Vertex& vertex) {
+      appendInt(vertex);
+
+      double sumpt_=0, sumpt2_=0;
+      for(auto iTrack = vertex.tracks_begin(); iTrack != vertex.tracks_end(); ++iTrack) {
+        const auto pt = (*iTrack)->pt();
+        sumpt_ += pt;
+        sumpt2_ += pt*pt;
+      }
+      sumpt.push_back(sumpt_);
+      sumpt2.push_back(sumpt2_);
+    }
+
+    void append(const TransientVertex& vertex) {
+      appendInt(vertex);
+
+      double sumpt_=0, sumpt2_=0;
+      for(const auto& track: vertex.originalTracks()) {
+        const auto pt = track.track().pt();
+        sumpt_ += pt;
+        sumpt2_ += pt*pt;
+      }
+      sumpt.push_back(sumpt_);
+      sumpt2.push_back(sumpt2_);
+    }
+
+    void appendInt(const reco::Vertex& vertex) {
       fake.push_back(vertex.isFake());
       valid.push_back(vertex.isValid());
       x.push_back(vertex.x());
@@ -157,17 +183,6 @@ private:
       ntracks.push_back(vertex.tracksSize());
       chi2.push_back(vertex.chi2());
       ndof.push_back(vertex.ndof());
-
-      double sumpt_=0, sumpt2_=0;
-      for(auto iTrack = vertex.tracks_begin(); iTrack != vertex.tracks_end(); ++iTrack) {
-        if((*iTrack).isNonnull()) {
-          const auto pt = (*iTrack)->pt();
-          sumpt_ += pt;
-          sumpt2_ += pt*pt;
-        }
-      }
-      sumpt.push_back(sumpt_);
-      sumpt2.push_back(sumpt2_);
     }
 
     void reset() {
