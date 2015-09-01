@@ -13,7 +13,7 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(1000)
 )
 
 # dataset=/RelValMinBias_13/CMSSW_7_4_8_patch1-MCRUN2_74_V11_mulTrh-v1/GEN-SIM-RECO
@@ -27,6 +27,7 @@ files_minbias_mc = [
 ]
 
 # 25ns
+# file dataset=/SingleMuon/Run2015C-PromptReco-v1/AOD run=254833
 files_singlemu_run254790 = [
     "/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/06E09600-244A-E511-9495-02163E014123.root",
     "/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/08455FBD-2D4A-E511-A872-02163E0143EF.root",
@@ -108,7 +109,21 @@ files_singlemu_run254833 = [
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(),
 )
-process.source.fileNames = files_singlemu_run254790
+process.source.fileNames = files_singlemu_run254790 # 25ns
+# golden json
+process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange("254790:90",
+                                                                    "254790:93-254790:208",
+#                                                                    [344, 602],
+#                                                                    [608, 630],
+#                                                                    [633, 665],
+#                                                                    [782, 784]]
+)
+
+process.source.fileNames = ["/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/0E860294-1C4A-E511-B501-02163E011955.root"]
+process.source.lumisToProcess = ["254790:169-254790:170"]
+#del process.source.lumisToProcess
+#process.source.eventsToProcess = cms.untracked.VEventRange("254790:170:206530637")
+
 
 process.options = cms.untracked.PSet()
 
@@ -116,6 +131,17 @@ process.options = cms.untracked.PSet()
 from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 process.GlobalTag = GlobalTag(process.GlobalTag, '74X_dataRun2_Prompt_v1', '')
+
+
+import subprocess
+def getCommitId():
+    cmd = ["git", "show", "--pretty=format:%H"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (output, error) = p.communicate()
+    ret = p.returncode
+    if ret != 0:
+        raise Exception("Ran %s, got exit code %d with output\n%s\n%s" % (" ".join(cmd), ret, output, error))
+    return output.split("\n")[0]
 
 process.TFileService = cms.Service("TFileService",
     fileName = cms.string("histograms.root")
@@ -131,6 +157,9 @@ process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
+    dataVersion = "74xdata",
+    codeVersion = getCommitId(),
+    energy = 13
 )
 process.p = cms.Path(
     process.vertexPerformanceNtuple+
