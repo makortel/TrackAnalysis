@@ -8,12 +8,15 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "FWCore/Utilities/interface/RandomNumberGenerator.h"
 #include "CLHEP/Random/RandomEngine.h"
 
+#include "DataFormats/Common/interface/Handle.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -34,6 +37,31 @@
 #include "CLHEP/Random/RandFlat.h"
 
 #include "TTree.h"
+#include "TH1F.h"
+
+namespace {
+  class VertexPrinter {
+  public:
+    VertexPrinter(const TransientVertex& v): vertex(v) {}
+
+    void print(std::ostream& os) const {
+      if(vertex.isValid()) {
+        os << "valid " << vertex.position();
+      }
+      else {
+        os << "invalid";
+      }
+    }
+
+  private:
+    const TransientVertex& vertex;
+  };
+
+  std::ostream& operator<<(std::ostream& os, const VertexPrinter& vp) {
+    vp.print(os);
+    return os;
+  }
+}
 
 class VertexPerformanceNtuple: public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
@@ -48,11 +76,12 @@ private:
   void book();
   void reset();
 
-  void doResolution(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine);
-  void doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine);
+  void doResolution(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
+  void doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
 
   edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
+  edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
 
   std::unique_ptr<TrackClusterizerInZ> clusterizer_;
   AdaptiveVertexFitter fitter_;
@@ -65,6 +94,20 @@ private:
 
   int b_nvertices;
   int b_nvertices_good;
+
+  struct TriggerPath {
+    TriggerPath(const std::string& n): name(n), value(false) {}
+
+    void book(TTree *tree, const std::string& prefix) {
+      tree->Branch((prefix+name).c_str(), &value);
+    }
+    void reset() { value = false; }
+
+    const std::string name;
+    bool value;
+  };
+
+  std::vector<TriggerPath> b_triggers;
 
   /*
   struct Vertex {
@@ -220,12 +263,76 @@ private:
   int b_eff_vertexTag_tracks_size;
   Vertices b_eff_vertexProbe;
   int b_eff_vertexProbe_tracks_size;
+
+  struct TrackPlots {
+    explicit TrackPlots(const std::string& pref): prefix(pref) {}
+
+    void book(TFileService& fs) {
+      trackpt = fs.make<TH1F>((prefix+"_track_pt").c_str(), "Track pT", 1000, 0, 100);
+      tracketa = fs.make<TH1F>((prefix+"_track_eta").c_str(), "Track #eta", 120, -3.0, 3.0);
+      trackphi = fs.make<TH1F>((prefix+"_track_phi").c_str(), "Track #phi", 128, -3.2, 3.2);
+      trackdxy = fs.make<TH1F>((prefix+"_track_dxy").c_str(), "Track dxy", 800, -0.4, 0.4);
+      trackdz = fs.make<TH1F>((prefix+"_track_dz").c_str(), "Track dz", 300, -15, 15);
+      trackdxy_bs = fs.make<TH1F>((prefix+"_track_dxy_bs").c_str(), "Track dxy wrt. beamspot", 800, -0.4, 0.4);
+      trackdz_bs = fs.make<TH1F>((prefix+"_track_dz_bs").c_str(), "Track dz wrt. beamspot", 300, -15, 15);
+      trackdxy_pv = fs.make<TH1F>((prefix+"_track_dxy_pv").c_str(), "Track dxy wrt. PV", 800, -0.4, 0.4);
+      trackdz_pv = fs.make<TH1F>((prefix+"_track_dz_pv").c_str(), "Track dz wrt. PV", 1000, -1, 1);
+    }
+
+    void fill(const std::vector<reco::TransientTrack>& tracks, const reco::BeamSpot& beamspot, const reco::Vertex& pv) {
+      for(const reco::TransientTrack& track: tracks) {
+        fill(track.track(), beamspot, pv);
+      }
+    }
+
+    void fill(const reco::Track& track, const reco::BeamSpot& beamspot, const reco::Vertex& pv) {
+      trackpt->Fill(track.pt());
+      tracketa->Fill(track.eta());
+      trackphi->Fill(track.phi());
+      trackdxy->Fill(track.dxy());
+      trackdz->Fill(track.dz());
+      trackdxy_bs->Fill(track.dxy(beamspot.position()));
+      trackdz_bs->Fill(track.dz(beamspot.position()));
+      trackdxy_pv->Fill(track.dxy(pv.position()));
+      trackdz_pv->Fill(track.dz(pv.position()));
+    }
+
+    std::string prefix;
+    TH1 *trackpt;
+    TH1 *tracketa;
+    TH1 *trackphi;
+    TH1 *trackdxy;
+    TH1 *trackdz;
+    TH1 *trackdxy_bs;
+    TH1 *trackdz_bs;
+    TH1 *trackdxy_pv;
+    TH1 *trackdz_pv;
+  };
+
+  TrackPlots h_res_tracks_pv;
+  TrackPlots h_res_tracks_set1;
+  TrackPlots h_res_tracks_set2;
+
+  TrackPlots h_eff_tracks_pv;
+  TrackPlots h_eff_tracks_setTag;
+  TrackPlots h_eff_tracks_setProbe;
 };
 
 VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfig):
   vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
-  beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc")))
+  beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
+  triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
+  h_res_tracks_pv("res_pv"),
+  h_res_tracks_set1("res_set1"),
+  h_res_tracks_set2("res_set2"),
+  h_eff_tracks_pv("eff_pv"),
+  h_eff_tracks_setTag("eff_setTag"),
+  h_eff_tracks_setProbe("eff_setProbe")
 {
+  for(const std::string& name: iConfig.getUntrackedParameter<std::vector<std::string>>("triggers")) {
+    b_triggers.emplace_back(name);
+  }
+
   // From PrimaryVertexProducer
   // select and configure the track clusterizer
   edm::ParameterSet pset = iConfig.getUntrackedParameter<edm::ParameterSet>("TkClusParameters");
@@ -250,6 +357,13 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
 
   tree = fs->make<TTree>("tree", "Tree");
   book();
+
+  h_res_tracks_pv.book(*fs);
+  h_res_tracks_set1.book(*fs);
+  h_res_tracks_set2.book(*fs);
+  h_eff_tracks_pv.book(*fs);
+  h_eff_tracks_setTag.book(*fs);
+  h_eff_tracks_setProbe.book(*fs);
 }
 
 VertexPerformanceNtuple::~VertexPerformanceNtuple() {}
@@ -258,6 +372,8 @@ void VertexPerformanceNtuple::fillDescriptions(edm::ConfigurationDescriptions& d
   edm::ParameterSetDescription desc;
   desc.addUntracked<edm::InputTag>("vertexSrc", edm::InputTag("offlinePrimaryVertices"));
   desc.addUntracked<edm::InputTag>("beamspotSrc", edm::InputTag("offlineBeamSpot"));
+  desc.addUntracked<edm::InputTag>("triggerResultsSrc", edm::InputTag("TriggerResults", "", "HLT"));
+  desc.addUntracked<std::vector<std::string>>("triggers", std::vector<std::string>());
 
   // copy contents from process.unsortedOfflinePrimaryVertices.TkClusParameters to this PSet
   edm::ParameterSetDescription descNested;
@@ -273,6 +389,10 @@ void VertexPerformanceNtuple::book() {
   tree->Branch("run", &b_run);
   tree->Branch("lumi", &b_lumi);
   tree->Branch("event", &b_event);
+
+  for(auto& trigger: b_triggers) {
+    trigger.book(tree, "trig_");
+  }
 
   tree->Branch("nvertices", &b_nvertices);
   tree->Branch("nvertices_good", &b_nvertices_good);
@@ -296,6 +416,10 @@ void VertexPerformanceNtuple::book() {
 
 void VertexPerformanceNtuple::reset() {
   b_run=0; b_lumi=0; b_event=0;
+  for(auto& trigger: b_triggers) {
+    trigger.reset();
+  }
+
   b_nvertices=0; b_nvertices_good=0;
   b_pv.reset();
 
@@ -313,6 +437,18 @@ void VertexPerformanceNtuple::reset() {
 }
 
 void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  edm::Handle<edm::TriggerResults> htrigger;
+  iEvent.getByToken(triggerSrc_, htrigger);
+  const edm::TriggerResults& trigger = *htrigger;
+
+  const edm::TriggerNames& triggerNames = iEvent.triggerNames(trigger);
+  for(size_t i=0; i<triggerNames.size(); ++i) {
+    for(auto& path: b_triggers) {
+      if(triggerNames.triggerName(i) == path.name)
+        path.value = trigger.accept(i);
+    }
+  }
+
   edm::Handle<reco::VertexCollection> hvertices;
   iEvent.getByToken(vertexSrc_, hvertices);
   const reco::VertexCollection& vertices = *hvertices;
@@ -364,9 +500,9 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
           return tt;
         });
 
-      doResolution(ttracks, engine);
+      doResolution(ttracks, engine, beamspot, thePV);
       if(thePV.tracksSize() >= 6) {
-        doEfficiency(ttracks, engine);
+        doEfficiency(ttracks, engine, beamspot, thePV);
       }
     }
   }
@@ -374,7 +510,7 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   reset();
 }
 
-void VertexPerformanceNtuple::doResolution(const std::vector<reco::TransientTrack>& ttracks, CLHEP::HepRandomEngine& engine) {
+void VertexPerformanceNtuple::doResolution(const std::vector<reco::TransientTrack>& ttracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv) {
   const size_t end = ttracks.size()%2 == 0 ? ttracks.size() : ttracks.size()-1;
 
   std::vector<reco::TransientTrack> set1, set2;
@@ -389,6 +525,10 @@ void VertexPerformanceNtuple::doResolution(const std::vector<reco::TransientTrac
     set2.push_back(ttracks[i+set2_i]);
   }
 
+  h_res_tracks_pv.fill(ttracks, beamspot, pv);
+  h_res_tracks_set1.fill(set1, beamspot, pv);
+  h_res_tracks_set2.fill(set2, beamspot, pv);
+
   b_res_vertex1_tracks_size = set1.size();
   b_res_vertex2_tracks_size = set2.size();
 
@@ -396,37 +536,53 @@ void VertexPerformanceNtuple::doResolution(const std::vector<reco::TransientTrac
   TransientVertex vertex1 = fitter_.vertex(set1);
   TransientVertex vertex2 = fitter_.vertex(set2);
 
-  edm::LogVerbatim("VertexPerformanceNtuple") << "Set1: " << set1.size() << " tracks, vertex " << (vertex1.isValid() ? "valid " : "invalid ") << vertex1.position();
-  edm::LogVerbatim("VertexPerformanceNtuple") << "Set2: " << set2.size() << " tracks, vertex " << (vertex2.isValid() ? "valid " : "invalid ") << vertex2.position();
+  edm::LogVerbatim("VertexPerformanceNtuple") << "Set1: " << set1.size() << " tracks, vertex " << VertexPrinter(vertex1);
+  edm::LogVerbatim("VertexPerformanceNtuple") << "Set2: " << set2.size() << " tracks, vertex " << VertexPrinter(vertex2);
 
   b_res_vertex1.append(vertex1);
   b_res_vertex2.append(vertex2);
 }
 
-void VertexPerformanceNtuple::doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine) {
+void VertexPerformanceNtuple::doEfficiency(const std::vector<reco::TransientTrack>& ttracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv) {
   // 2/3 for tag, 1/3 for probe
   std::vector<reco::TransientTrack> setTag, setProbe;
-  setTag.reserve(2*tracks.size()/3+1); setProbe.reserve(tracks.size()/3+1);
+  setTag.reserve(2*ttracks.size()/3+1); setProbe.reserve(ttracks.size()/3+1);
 
-  const size_t end = tracks.size() - tracks.size()%3;
+  const size_t end = ttracks.size() - ttracks.size()%3;
   for(size_t i=0; i<end; i+= 3) {
     const size_t probe_i = CLHEP::RandFlat::shootInt(&engine, 0, 3);
-    setProbe.push_back(tracks[i+probe_i]);
+    setProbe.push_back(ttracks[i+probe_i]);
 
     for(size_t j=0; j<3; ++j) {
       if(j == probe_i) continue;
-      setTag.push_back(tracks[i+probe_i]);
+      setTag.push_back(ttracks[i+probe_i]);
     }
   }
-  if(tracks.size()%3 == 1) {
-    setTag.push_back(tracks[end]);
+  if(ttracks.size()%3 == 1) {
+    const int probeOrTag = CLHEP::RandFlat::shootInt(&engine, 0, 3);
+    if(probeOrTag == 0) { // 1/3 probability for probe
+      setProbe.push_back(ttracks[end]);
+    }
+    else { // 2/3 for tag
+      setTag.push_back(ttracks[end]);
+    }
   }
-  else if(tracks.size()%3 == 2) {
-    const size_t probe_i = CLHEP::RandFlat::shootInt(&engine, 0, 2);
-    const size_t tag_i = 1-probe_i;
-    setProbe.push_back(tracks[end+probe_i]);
-    setTag.push_back(tracks[end+tag_i]);
+  else if(ttracks.size()%3 == 2) {
+    const size_t probe_i = CLHEP::RandFlat::shootInt(&engine, 0, 3);
+    if(probe_i < 2) { // 2/3 one track to probe, other to tag
+      const size_t tag_i = 1-probe_i;
+      setProbe.push_back(ttracks[end+probe_i]);
+      setTag.push_back(ttracks[end+tag_i]);
+    }
+    else { // 1/3 both to tag
+      setTag.push_back(ttracks[end]);
+      setTag.push_back(ttracks[end+1]);
+    }
   }
+
+  h_eff_tracks_pv.fill(ttracks, beamspot, pv);
+  h_eff_tracks_setTag.fill(setTag, beamspot, pv);
+  h_eff_tracks_setProbe.fill(setProbe, beamspot, pv);
 
   b_eff_vertexTag_tracks_size = setTag.size();
   b_eff_vertexProbe_tracks_size = setProbe.size();
@@ -436,17 +592,25 @@ void VertexPerformanceNtuple::doEfficiency(const std::vector<reco::TransientTrac
   std::vector< std::vector<reco::TransientTrack> > && clustersProbe =  clusterizer_->clusterize(setProbe);
   edm::LogVerbatim("VertexPerformanceNtuple") << "SetTag: " << setTag.size() << " tracks, " << clustersTag.size() << " clusters";
   for(const auto& cluster: clustersTag) {
+    if(cluster.size() < 2) {
+      edm::LogVerbatim("VertexPerformanceNtuple") << "  cluster has " << cluster.size() << " tracks, ignoring";
+      continue;
+    }
     TransientVertex vertex = fitter_.vertex(cluster);
     b_eff_vertexTag.append(vertex);
     
-    edm::LogVerbatim("VertexPerformanceNtuple") << " vertex " << (vertex.isValid() ? "valid " : "invalid ") << vertex.position();
+    edm::LogVerbatim("VertexPerformanceNtuple") << " vertex " << VertexPrinter(vertex);
   }
 
   edm::LogVerbatim("VertexPerformanceNtuple") << "SetProbe: " << setProbe.size() << " tracks, " << clustersProbe.size() << " clusters";
   for(const auto& cluster: clustersProbe) {
+    if(cluster.size() < 2) {
+      edm::LogVerbatim("VertexPerformanceNtuple") << "  cluster has " << cluster.size() << " tracks, ignoring";
+      continue;
+    }
     TransientVertex vertex = fitter_.vertex(cluster);
     b_eff_vertexProbe.append(vertex);
-    edm::LogVerbatim("VertexPerformanceNtuple") << " vertex " << (vertex.isValid() ? "valid " : "invalid ") << vertex.position();
+    edm::LogVerbatim("VertexPerformanceNtuple") << " vertex " << VertexPrinter(vertex);
   }
 
 }
