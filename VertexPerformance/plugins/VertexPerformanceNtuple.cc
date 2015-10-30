@@ -34,6 +34,9 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ_vect.h"
 #include "RecoVertex/AdaptiveVertexFit/interface/AdaptiveVertexFitter.h"
 
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertexContainer.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+
 #include "CLHEP/Random/RandFlat.h"
 
 #include "TTree.h"
@@ -61,6 +64,25 @@ namespace {
     vp.print(os);
     return os;
   }
+
+  bool matchVertex(const reco::Vertex& recoVertex, const TrackingVertex& simVertex) {
+    constexpr double absZ_ = 0.1;
+    constexpr double sigmaZ_ = 3;
+
+    const double zdiff = std::abs(recoVertex.z() - simVertex.position().z());
+    return zdiff < absZ_ && zdiff / recoVertex.zError() < sigmaZ_;
+  }
+
+  std::vector<const TrackingVertex *> matchVertices(const reco::Vertex& recoVertex, const std::vector<const TrackingVertex *>& trackingVertices) {
+    std::vector<const TrackingVertex *> ret;
+
+    for(const TrackingVertex *simVertexP: trackingVertices) {
+      if(matchVertex(recoVertex, *simVertexP)) {
+        ret.push_back(simVertexP);
+      }
+    }
+    return ret;
+  }
 }
 
 class VertexPerformanceNtuple: public edm::one::EDAnalyzer<edm::one::SharedResources> {
@@ -79,9 +101,13 @@ private:
   void doResolution(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
   void doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
 
+  edm::EDGetTokenT<reco::TrackCollection> trackSrc_;
   edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
   edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
+
+  const bool useTrackingParticles_;
+  edm::EDGetTokenT<TrackingVertexCollection> trackingVertexSrc_;
 
   std::unique_ptr<TrackClusterizerInZ> clusterizer_;
   AdaptiveVertexFitter fitter_;
@@ -92,6 +118,7 @@ private:
   edm::LuminosityBlockNumber_t b_lumi;
   edm::EventNumber_t b_event;
 
+  int b_nsimvertices;
   int b_nvertices;
   int b_nvertices_good;
 
@@ -109,68 +136,73 @@ private:
 
   std::vector<TriggerPath> b_triggers;
 
-  /*
-  struct Vertex {
-    Vertex() { reset(); }
-
+  struct Beamspot {
     void book(TTree *tree, const std::string& prefix) {
       tree->Branch((prefix+"_x").c_str(), &x);
       tree->Branch((prefix+"_y").c_str(), &y);
       tree->Branch((prefix+"_z").c_str(), &z);
-      tree->Branch((prefix+"_rho").c_str(), &rho);
-      tree->Branch((prefix+"_x_error").c_str(), &x_error);
-      tree->Branch((prefix+"_y_error").c_str(), &y_error);
-      tree->Branch((prefix+"_z_error").c_str(), &z_error);
-      tree->Branch((prefix+"_ndof").c_str(), &ndof);
-      tree->Branch((prefix+"_chi2").c_str(), &chi2);
-      tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
+    }
+    void set(const reco::BeamSpot& bs) {
+      x = bs.x0();
+      y = bs.y0();
+      z = bs.z0();
+    }
+    void reset() {
+      x = 0; y = 0; z = 0;
+    }
+    double x;
+    double y;
+    double z;
+  };
+
+
+  struct VerticesLight {
+    void book(TTree *tree, const std::string& prefix, bool useTrackingParticles=false) {
       tree->Branch((prefix+"_valid").c_str(), &valid);
       tree->Branch((prefix+"_fake").c_str(), &fake);
+      tree->Branch((prefix+"_z").c_str(), &z);
+      tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
+
+      if(useTrackingParticles) {
+        tree->Branch((prefix+"_matchedSimVertices").c_str(), &matchedSimVertices);
+        tree->Branch((prefix+"_matchedToSimPV").c_str(), &matchedToSimPV);
+      }
     }
 
-    void set(const reco::Vertex& vertex) {
-      fake = vertex.isFake();
-      if(vertex.isValid()) {
-        valid = true;
-        x = vertex.x();
-        y = vertex.y();
-        z = vertex.z();
-        rho = vertex.position().rho();
-        x_error = vertex.xError();
-        y_error = vertex.yError();
-        z_error = vertex.zError();
-        ntracks = vertex.tracksSize();
-        chi2 = vertex.chi2();
-        ndof = vertex.ndof();
+    void append(const reco::Vertex& vertex, const std::vector<const TrackingVertex *>& trackingVertices, const TrackingVertex *simPV) {
+      fake.push_back(vertex.isFake());
+      valid.push_back(vertex.isValid());
+      z.push_back(vertex.z());
+      ntracks.push_back(vertex.tracksSize());
+
+      if(!trackingVertices.empty()) {
+        matchedSimVertices.push_back(matchVertices(vertex, trackingVertices).size());
+        matchedToSimPV.push_back(matchVertex(vertex, *simPV));
       }
     }
 
     void reset() {
-      x=0.; y=0.; z=0; rho=0.;
-      x_error=0.; y_error=0.; z_error=0.;
-      ndof=0; chi2=0; ntracks=0;
-      fake=false; valid=false;
+      z.clear();
+      ntracks.clear();
+      fake.clear(); valid.clear();
+
+      matchedSimVertices.clear(); matchedToSimPV.clear();
     }
 
-    double x;
-    double y;
-    double z;
-    double rho;
-    double x_error;
-    double y_error;
-    double z_error;
-    double ndof;
-    double chi2;
-    int ntracks;
-    bool fake;
-    bool valid;
+    std::vector<double> z;
+    std::vector<int> ntracks;
+    std::vector<bool> fake;
+    std::vector<bool> valid;
+
+    std::vector<int> matchedSimVertices;
+    std::vector<bool> matchedToSimPV;
   };
-  */
+
 
   struct Vertices {
     Vertices() {}
 
-    void book(TTree *tree, const std::string& prefix) {
+    void book(TTree *tree, const std::string& prefix, bool useTrackingParticles=false) {
       tree->Branch((prefix+"_valid").c_str(), &valid);
       tree->Branch((prefix+"_fake").c_str(), &fake);
       tree->Branch((prefix+"_x").c_str(), &x);
@@ -185,9 +217,14 @@ private:
       tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
       tree->Branch((prefix+"_sumpt").c_str(), &sumpt); 
       tree->Branch((prefix+"_sumpt2").c_str(), &sumpt2);
+
+      if(useTrackingParticles) {
+        tree->Branch((prefix+"_matchedSimVertices").c_str(), &matchedSimVertices);
+        tree->Branch((prefix+"_matchedToSimPV").c_str(), &matchedToSimPV);
+      }
     }
 
-    void append(const reco::Vertex& vertex) {
+    void append(const reco::Vertex& vertex, const std::vector<const TrackingVertex *>& trackingVertices, const TrackingVertex *simPV) {
       appendInt(vertex);
 
       double sumpt_=0, sumpt2_=0;
@@ -198,6 +235,11 @@ private:
       }
       sumpt.push_back(sumpt_);
       sumpt2.push_back(sumpt2_);
+
+      if(!trackingVertices.empty()) {
+        matchedSimVertices.push_back(matchVertices(vertex, trackingVertices).size());
+        matchedToSimPV.push_back(matchVertex(vertex, *simPV));
+      }
     }
 
     void append(const TransientVertex& vertex) {
@@ -234,6 +276,8 @@ private:
       ndof.clear(); chi2.clear(); ntracks.clear();
       sumpt.clear(); sumpt2.clear();
       fake.clear(); valid.clear();
+
+      matchedSimVertices.clear(); matchedToSimPV.clear();
     }
 
     std::vector<double> x;
@@ -250,9 +294,58 @@ private:
     std::vector<double> sumpt2;
     std::vector<bool> fake;
     std::vector<bool> valid;
+
+    std::vector<int> matchedSimVertices;
+    std::vector<bool> matchedToSimPV;
   };
 
+  struct SimVertices {
+    SimVertices() {}
+
+    void book(TTree *tree, const std::string& prefix) {
+      tree->Branch((prefix+"_x").c_str(), &x);
+      tree->Branch((prefix+"_y").c_str(), &y);
+      tree->Branch((prefix+"_z").c_str(), &z);
+      tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
+      tree->Branch((prefix+"_sumpt").c_str(), &sumpt); 
+      tree->Branch((prefix+"_sumpt2").c_str(), &sumpt2);
+    }
+
+    void append(const TrackingVertex& vertex) {
+      x.push_back(vertex.position().x());
+      y.push_back(vertex.position().y());
+      z.push_back(vertex.position().z());
+      ntracks.push_back(vertex.nDaughterTracks());
+
+      double sumpt_=0, sumpt2_=0;
+      for(auto iTrack=vertex.daughterTracks_begin(); iTrack != vertex.daughterTracks_end(); ++iTrack) {
+        const auto pt = (*iTrack)->pt();
+        sumpt_ += pt;
+        sumpt2_ += pt*pt;
+      }
+      sumpt.push_back(sumpt_);
+      sumpt2.push_back(sumpt2_);
+    }
+
+    void reset() {
+      x.clear(); y.clear(); z.clear();
+      ntracks.clear();
+      sumpt.clear(); sumpt2.clear();
+    }
+
+    std::vector<double> x;
+    std::vector<double> y;
+    std::vector<double> z;
+    std::vector<int> ntracks;
+    std::vector<double> sumpt;
+    std::vector<double> sumpt2;
+  };
+
+  Beamspot b_bs;
   Vertices b_pv;
+  VerticesLight b_puv;
+
+  SimVertices b_simpv;
 
   Vertices b_res_vertex1;
   int b_res_vertex1_tracks_size;
@@ -319,9 +412,11 @@ private:
 };
 
 VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfig):
+  trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("trackSrc"))),
   vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
   beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
   triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
+  useTrackingParticles_(iConfig.getUntrackedParameter<bool>("useTrackingParticles")),
   h_res_tracks_pv("res_pv"),
   h_res_tracks_set1("res_set1"),
   h_res_tracks_set2("res_set2"),
@@ -331,6 +426,10 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
 {
   for(const std::string& name: iConfig.getUntrackedParameter<std::vector<std::string>>("triggers")) {
     b_triggers.emplace_back(name);
+  }
+
+  if(useTrackingParticles_) {
+    trackingVertexSrc_ = consumes<TrackingVertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("trackingVertexSrc"));
   }
 
   // From PrimaryVertexProducer
@@ -370,10 +469,14 @@ VertexPerformanceNtuple::~VertexPerformanceNtuple() {}
 
 void VertexPerformanceNtuple::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
+  desc.addUntracked<edm::InputTag>("trackSrc", edm::InputTag("generalTracks"));
   desc.addUntracked<edm::InputTag>("vertexSrc", edm::InputTag("offlinePrimaryVertices"));
   desc.addUntracked<edm::InputTag>("beamspotSrc", edm::InputTag("offlineBeamSpot"));
   desc.addUntracked<edm::InputTag>("triggerResultsSrc", edm::InputTag("TriggerResults", "", "HLT"));
   desc.addUntracked<std::vector<std::string>>("triggers", std::vector<std::string>());
+
+  desc.addUntracked<bool>("useTrackingParticles", false);
+  desc.addUntracked<edm::InputTag>("trackingVertexSrc", edm::InputTag("mix", "MergedTrackTruth"));
 
   // copy contents from process.unsortedOfflinePrimaryVertices.TkClusParameters to this PSet
   edm::ParameterSetDescription descNested;
@@ -394,10 +497,17 @@ void VertexPerformanceNtuple::book() {
     trigger.book(tree, "trig_");
   }
 
+  b_bs.book(tree, "bs");
+
+  tree->Branch("nsimvertices", &b_nsimvertices);
   tree->Branch("nvertices", &b_nvertices);
   tree->Branch("nvertices_good", &b_nvertices_good);
 
-  b_pv.book(tree, "pv");
+  b_pv.book(tree, "pv", useTrackingParticles_);
+  b_puv.book(tree, "puv", useTrackingParticles_);
+  if(useTrackingParticles_) {
+    b_simpv.book(tree, "simpv");
+  }
 
   b_res_vertex1.book(tree, "res_vertex1");
   tree->Branch("res_vertex1_tracks_size", &b_res_vertex1_tracks_size);
@@ -420,8 +530,13 @@ void VertexPerformanceNtuple::reset() {
     trigger.reset();
   }
 
+  b_bs.reset();
+
+  b_nsimvertices=0;
   b_nvertices=0; b_nvertices_good=0;
   b_pv.reset();
+  b_puv.reset();
+  b_simpv.reset();
 
   b_res_vertex1.reset();
   b_res_vertex1_tracks_size = 0;
@@ -449,6 +564,10 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
     }
   }
 
+  edm::Handle<reco::TrackCollection> htracks;
+  iEvent.getByToken(trackSrc_, htracks);
+  const reco::TrackCollection& tracks = *htracks;
+
   edm::Handle<reco::VertexCollection> hvertices;
   iEvent.getByToken(vertexSrc_, hvertices);
   const reco::VertexCollection& vertices = *hvertices;
@@ -456,6 +575,26 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   edm::Handle<reco::BeamSpot> hbeamspot;
   iEvent.getByToken(beamspotSrc_, hbeamspot);
   const reco::BeamSpot& beamspot = *hbeamspot;
+
+  const TrackingVertex *simPV = nullptr;
+  std::vector<const TrackingVertex *> trackingVertices;
+  if(useTrackingParticles_) {
+    edm::Handle<TrackingVertexCollection> htv;
+    iEvent.getByToken(trackingVertexSrc_, htv);
+    const TrackingVertexCollection& tvs = *htv;
+    int current_event = -1;
+    for(const TrackingVertex& v: tvs) {
+      // Associate only to primary vertices of the in-time pileup
+      // events (BX=0, first vertex in each of the events)
+      if(v.eventId().bunchCrossing() != 0) continue;
+      if(v.eventId().event() != current_event) {
+        current_event = v.eventId().event();
+        trackingVertices.push_back(&v);
+        if(v.eventId().event() == 0)
+          simPV = &v;
+      }
+    }
+  }
 
   edm::ESHandle<TransientTrackBuilder> ttBuilderHandle;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", ttBuilderHandle);
@@ -468,6 +607,7 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   b_lumi = iEvent.id().luminosityBlock();
   b_event = iEvent.id().event();
 
+  b_nsimvertices = trackingVertices.size();
   b_nvertices = vertices.size();
   b_nvertices_good = 0;
   for(const auto& v: vertices) {
@@ -475,10 +615,21 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
       ++b_nvertices_good;
   }
 
+  b_bs.set(beamspot);
+
+  if(simPV) {
+    b_simpv.append(*simPV);
+  }
+
   if(!vertices.empty()) {
     // For now, do it only for "the PV"
     const reco::Vertex& thePV = vertices[0];
-    b_pv.append(thePV);
+    b_pv.append(thePV, trackingVertices, simPV);
+
+    for(size_t i=1; i<vertices.size(); ++i) {
+      b_puv.append(vertices[i], trackingVertices, simPV);
+    }
+
 
     if(thePV.tracksSize() >= 4) {
       edm::LogInfo("VertexPerformanceNtuple") << "Primary vertex at " << thePV.position() << " with " << thePV.tracksSize() << " tracks";
