@@ -34,7 +34,9 @@ VertexPerformanceConfigInfo::VertexPerformanceConfigInfo(const edm::ParameterSet
   codeVersion(pset.getUntrackedParameter<std::string>("codeVersion")),
   era(pset.getUntrackedParameter<std::string>("era")),
   energy(pset.getUntrackedParameter<unsigned>("energy"))
-{}
+{
+  usesResource("TFileService");
+}
 
 VertexPerformanceConfigInfo::~VertexPerformanceConfigInfo() {}
 
