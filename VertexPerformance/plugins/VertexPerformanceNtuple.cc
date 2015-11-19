@@ -1,13 +1,12 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include "FWCore/Utilities/interface/EDGetToken.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -85,7 +84,7 @@ namespace {
   }
 }
 
-class VertexPerformanceNtuple: public edm::one::EDAnalyzer<edm::one::SharedResources> {
+class VertexPerformanceNtuple: public edm::EDAnalyzer {
 public:
   explicit VertexPerformanceNtuple(const edm::ParameterSet&);
   ~VertexPerformanceNtuple();
@@ -101,13 +100,13 @@ private:
   void doResolution(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
   void doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
 
-  edm::EDGetTokenT<reco::TrackCollection> trackSrc_;
-  edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
-  edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
-  edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
+  edm::InputTag trackSrc_;
+  edm::InputTag vertexSrc_;
+  edm::InputTag beamspotSrc_;
+  edm::InputTag triggerSrc_;
 
   const bool useTrackingParticles_;
-  edm::EDGetTokenT<TrackingVertexCollection> trackingVertexSrc_;
+  edm::InputTag trackingVertexSrc_;
 
   std::unique_ptr<TrackClusterizerInZ> clusterizer_;
   AdaptiveVertexFitter fitter_;
@@ -412,10 +411,10 @@ private:
 };
 
 VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfig):
-  trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("trackSrc"))),
-  vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
-  beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
-  triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
+  trackSrc_(iConfig.getUntrackedParameter<edm::InputTag>("trackSrc")),
+  vertexSrc_(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc")),
+  beamspotSrc_(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc")),
+  triggerSrc_(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc")),
   useTrackingParticles_(iConfig.getUntrackedParameter<bool>("useTrackingParticles")),
   h_res_tracks_pv("res_pv"),
   h_res_tracks_set1("res_set1"),
@@ -429,7 +428,7 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
   }
 
   if(useTrackingParticles_) {
-    trackingVertexSrc_ = consumes<TrackingVertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("trackingVertexSrc"));
+    trackingVertexSrc_ = iConfig.getUntrackedParameter<edm::InputTag>("trackingVertexSrc");
   }
 
   // From PrimaryVertexProducer
@@ -451,7 +450,6 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
     throw VertexException("PrimaryVertexProducerAlgorithm: unknown clustering algorithm: " + clusteringAlgorithm);  
   }
 
-  usesResource("TFileService");
   edm::Service<TFileService> fs;
 
   tree = fs->make<TTree>("tree", "Tree");
@@ -553,7 +551,7 @@ void VertexPerformanceNtuple::reset() {
 
 void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   edm::Handle<edm::TriggerResults> htrigger;
-  iEvent.getByToken(triggerSrc_, htrigger);
+  iEvent.getByLabel(triggerSrc_, htrigger);
   const edm::TriggerResults& trigger = *htrigger;
 
   const edm::TriggerNames& triggerNames = iEvent.triggerNames(trigger);
@@ -564,23 +562,25 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
     }
   }
 
+  /*
   edm::Handle<reco::TrackCollection> htracks;
-  iEvent.getByToken(trackSrc_, htracks);
+  iEvent.getByLabel(trackSrc_, htracks);
   const reco::TrackCollection& tracks = *htracks;
+  */
 
   edm::Handle<reco::VertexCollection> hvertices;
-  iEvent.getByToken(vertexSrc_, hvertices);
+  iEvent.getByLabel(vertexSrc_, hvertices);
   const reco::VertexCollection& vertices = *hvertices;
 
   edm::Handle<reco::BeamSpot> hbeamspot;
-  iEvent.getByToken(beamspotSrc_, hbeamspot);
+  iEvent.getByLabel(beamspotSrc_, hbeamspot);
   const reco::BeamSpot& beamspot = *hbeamspot;
 
   const TrackingVertex *simPV = nullptr;
   std::vector<const TrackingVertex *> trackingVertices;
   if(useTrackingParticles_) {
     edm::Handle<TrackingVertexCollection> htv;
-    iEvent.getByToken(trackingVertexSrc_, htv);
+    iEvent.getByLabel(trackingVertexSrc_, htv);
     const TrackingVertexCollection& tvs = *htv;
     int current_event = -1;
     for(const TrackingVertex& v: tvs) {
@@ -601,7 +601,7 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   const TransientTrackBuilder& ttBuilder = *ttBuilderHandle;
 
   edm::Service<edm::RandomNumberGenerator> rng;
-  CLHEP::HepRandomEngine& engine = rng->getEngine(iEvent.streamID());
+  CLHEP::HepRandomEngine& engine = rng->getEngine();
 
   b_run = iEvent.id().run();
   b_lumi = iEvent.id().luminosityBlock();

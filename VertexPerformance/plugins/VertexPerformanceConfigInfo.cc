@@ -1,4 +1,4 @@
-#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -11,7 +11,7 @@
 #include<limits>
 #include<string>
 
-class VertexPerformanceConfigInfo: public edm::one::EDAnalyzer<edm::one::SharedResources> {
+class VertexPerformanceConfigInfo: public edm::EDAnalyzer {
  public:
   explicit VertexPerformanceConfigInfo(const edm::ParameterSet&);
   ~VertexPerformanceConfigInfo();
