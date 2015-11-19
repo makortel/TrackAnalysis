@@ -113,14 +113,16 @@ process.source.fileNames = files_singlemu_run254790 # 25ns
 # golden json
 process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange("254790:90",
                                                                     "254790:93-254790:208",
-#                                                                    [344, 602],
-#                                                                    [608, 630],
-#                                                                    [633, 665],
-#                                                                    [782, 784]]
+                                                                    "254790:344-254790:602",
+                                                                    "254790:608-254790:630",
+                                                                    "254790:633-254790:665",
+                                                                    "254790:782-254790:784",
 )
 
-process.source.fileNames = ["/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/0E860294-1C4A-E511-B501-02163E011955.root"]
-process.source.lumisToProcess = ["254790:169-254790:170"]
+#process.source.fileNames = ["/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/0E860294-1C4A-E511-B501-02163E011955.root"]
+#process.maxEvents.input = -1
+#process.source.lumisToProcess = ["254790:169-254790:170"]
+#process.source.lumisToProcess = ["254790:170"]
 #del process.source.lumisToProcess
 #process.source.eventsToProcess = cms.untracked.VEventRange("254790:170:206530637")
 
@@ -155,6 +157,8 @@ process.RandomNumberGeneratorService.vertexPerformanceNtuple = cms.PSet(
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
+process.vertexPerformanceNtuple.triggers = ["HLT_IsoMu20_v2"]
+
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
     dataVersion = "74xdata",
