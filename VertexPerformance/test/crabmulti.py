@@ -1,7 +1,14 @@
 import time
 import subprocess
+from multiprocessing import Process
 
-multitaskdir = 'vtx_singlemuon_v2'
+from CRABAPI.RawCommand import crabCommand
+from CRABClient.ClientExceptions import ClientException
+from WMCore.Configuration import Configuration
+from httplib import HTTPException
+
+#multitaskdir = 'vtx_singlemuon_v2'
+multitaskdir = 'vtx_jetht_v4_test'
 baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_74x/'+multitaskdir
 eosDir = '/eos/cms'+baseDir
 
@@ -18,14 +25,26 @@ def _executeThrow(cmd):
     print "Created eos dir", eosDir
 
 
+# https://hypernews.cern.ch/HyperNews/CMS/get/computing-tools/622/1/1/2/1/1/1/1.html
+def submit_(config):
+    try:
+        args = [
+            "--dryrun", "--skip-estimates"
+        ]
+        crabCommand('submit', config = config, *args)
+    except HTTPException as hte:
+        print "Failed submitting task: %s" % (hte.headers)
+    except ClientException as cle:
+        print "Failed submitting task: %s" % (cle)
+
+def submit(config):
+    p = Process(target=submit_, args=(config,))
+    p.start()
+    p.join()
+
 def main():
     if _execute([eos, "ls", eosDir]) != 0:
         _executeThrow([eos, "mkdir", eosDir])
-
-    from CRABAPI.RawCommand import crabCommand
-    from CRABClient.ClientExceptions import ClientException
-    from WMCore.Configuration import Configuration
-    from httplib import HTTPException
 
     config = Configuration()
 
@@ -44,7 +63,7 @@ def main():
     config.JobType.psetName    = 'config.py'
 
     config.section_("Data")
-    config.Data.inputDataset = '/SingleMuon/Run2015C-PromptReco-v1/AOD'
+    config.Data.inputDataset = 'Dummy'
     config.Data.splitting = 'EventAwareLumiBased'
     config.Data.unitsPerJob = 50000
     config.Data.outLFNDirBase = baseDir
@@ -53,25 +72,35 @@ def main():
     config.section_("Site")
     config.Site.storageSite = 'T2_CH_CERN'
 
-    def submit(config):
-        try:
-            crabCommand('submit', config = config)
-        except HTTPException as hte:
-            print "Failed submitting task: %s" % (hte.headers)
-        except ClientException as cle:
-            print "Failed submitting task: %s" % (cle)
-
     #############################################################################################
     ## From now on that's what users should modify: this is the a-la-CRAB2 configuration part. ##
     #############################################################################################
 
-    config.General.requestName = 'SingleMuon_254790'
-    config.Data.lumiMask = 'json_run_254790.txt'
+#    config.General.requestName = 'JetHT_Run2015B_251251'
+#    config.Data.inputDataset = "/JetHT/Run2015B-16Oct2015-v1/AOD"
+#    config.Data.lumiMask = 'json_run_251251.txt'
+#    config.JobType.pyCfgParams = ["globalTag=74X_dataRun2_v4"]
+#    submit(config)
+#
+#    config.General.requestName = 'JetHT_Run2015C_254790'
+#    config.Data.inputDataset = "/JetHT/Run2015C_25ns-05Oct2015-v1/AOD"
+#    config.Data.lumiMask = 'json_run_254790.txt'
+#    config.JobType.pyCfgParams = ["globalTag=74X_dataRun2_v4"]
+#    submit(config)
+#
+#    config.General.requestName = 'JetHT_Run2015D_256677'
+#    config.Data.inputDataset = "/JetHT/Run2015D-PromptReco-v3/AOD"
+#    config.Data.lumiMask = 'json_run_256677.txt'
+#    config.JobType.pyCfgParams = ["globalTag=74X_dataRun2_Prompt_v2"]
+#    submit(config)
+
+
+    config.General.requestName = 'JetHT_Run2015C_254833'
+    config.Data.inputDataset = "/JetHT/Run2015C-PromptReco-v1/AOD"
+    config.Data.lumiMask = 'json_run_254833.txt'
+    config.JobType.pyCfgParams = ["globalTag=74X_dataRun2_v4"]
     submit(config)
 
-    config.General.requestName = 'SingleMuon_254833'
-    config.Data.lumiMask = 'json_run_254833.txt'
-    submit(config)
 
 if __name__ == '__main__':
     main()
