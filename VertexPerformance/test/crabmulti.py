@@ -1,20 +1,23 @@
 import time
 import subprocess
 
-multitaskdir = 'vtx_singlemuon_v2'
-baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_74x/'+multitaskdir
+multitaskdir = 'vtx_jetht_v4'
+baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_53x/'+multitaskdir
 eosDir = '/eos/cms'+baseDir
 
 eos = '/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select'
 
-def _execute(cmd):
+def _execute(cmd, getoutput=False):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, error) = p.communicate()
-    return p.returncode
+    if getoutput:
+        return (p.returncode, output, error)
+    else:
+        return p.returncode
 def _executeThrow(cmd):
-    ret = _execute(cmd)    
+    (ret, output, error) = _execute(cmd, getoutput=True)
     if ret != 0:
-        raise Exception("Ran '%s', got exitcode with output\n%s\n%s" % (" ".join(cmd), ret, output, error))
+        raise Exception("Ran '%s', got exitcode %d with output\n%s\n%s" % (" ".join(cmd), ret, output, error))
     print "Created eos dir", eosDir
 
 
@@ -44,7 +47,7 @@ def main():
     config.JobType.psetName    = 'config.py'
 
     config.section_("Data")
-    config.Data.inputDataset = '/SingleMuon/Run2015C-PromptReco-v1/AOD'
+    config.Data.inputDataset = 'Dummy'
     config.Data.splitting = 'EventAwareLumiBased'
     config.Data.unitsPerJob = 50000
     config.Data.outLFNDirBase = baseDir
@@ -65,13 +68,18 @@ def main():
     ## From now on that's what users should modify: this is the a-la-CRAB2 configuration part. ##
     #############################################################################################
 
-    config.General.requestName = 'SingleMuon_254790'
-    config.Data.lumiMask = 'json_run_254790.txt'
+#    config.General.requestName = 'JetHT_Run2012D_208307'
+#    config.Data.inputDataset = '/JetHT/Run2012D-22Jan2013-v1/AOD'
+#    config.Data.lumiMask = 'json_run_208307.txt'
+#    config.JobType.pyCfgParams = ["globalTag=FT_53_V21_AN6"]
+#    submit(config)
+
+    config.General.requestName = 'Jet_Run2011B_177719'
+    config.Data.inputDataset = '/Jet/Run2011B-12Oct2013-v1/AOD'
+    config.Data.lumiMask = 'json_run_177719.txt'
+    config.JobType.pyCfgParams = ["globalTag=FT_53_LV5_AN1"]
     submit(config)
 
-    config.General.requestName = 'SingleMuon_254833'
-    config.Data.lumiMask = 'json_run_254833.txt'
-    submit(config)
 
 if __name__ == '__main__':
     main()
