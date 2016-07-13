@@ -21,10 +21,11 @@ options.register("globalTag", "80X_dataRun2_Prompt_v9",
 options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+#    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10000)
 )
 
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 500
 process.MessageLogger.suppressWarning.append("vertexPerformanceNtuple")
 #process.MessageLogger.categories.append("TwoTrackMinimumDistance")
 #process.MessageLogger.cerr.TwoTrackMinimumDistance = cms.untracked.PSet(limit = cms.untracked.int32(10))
@@ -100,6 +101,8 @@ process.source = cms.Source("PoolSource",
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange(golden_run254790)
 #process.source.fileNames = files_jetht_run251251
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange(golden_run251251)
+#process.source.fileNames = files_jetht_run273725
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange(golden_run273725)
 
 #process.source.fileNames = ["/store/data/Run2015C/SingleMuon/AOD/PromptReco-v1/000/254/790/00000/0E860294-1C4A-E511-B501-02163E011955.root"]
 #process.maxEvents.input = -1
@@ -143,7 +146,13 @@ process.RandomNumberGeneratorService.vertexPerformanceNtuple = cms.PSet(
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
-process.vertexPerformanceNtuple.triggers = ["HLT_IsoMu20_v2"]
+process.vertexPerformanceNtuple.triggers = [
+    "HLT_PFHT800_v1",
+    "HLT_PFHT800_v2",
+    "HLT_PFHT800_v3",
+    "HLT_PFHT800_v4"
+]
+process.vertexPerformanceNtuple.minimal = True
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
