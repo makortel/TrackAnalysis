@@ -12,6 +12,14 @@ process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Reconstruction_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 
+import FWCore.ParameterSet.VarParsing as VarParsing
+options = VarParsing.VarParsing()
+options.register("globalTag", "80X_mcRun2_asymptotic_v14",
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.string,
+                 "GlobalTag to use")
+options.parseArguments()
+
 process.maxEvents = cms.untracked.PSet(
 #    input = cms.untracked.int32(-1)
     input = cms.untracked.int32(100)
@@ -86,7 +94,7 @@ process.options = cms.untracked.PSet()
 
 from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
-process.GlobalTag = GlobalTag(process.GlobalTag, 'MCRUN2_74_V8', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 
 
 import subprocess
@@ -116,7 +124,7 @@ process.vertexPerformanceNtuple.useTrackingParticles = True
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
-    dataVersion = "74xmc",
+    dataVersion = "80xmc",
     codeVersion = getCommitId(),
     energy = 13
 )

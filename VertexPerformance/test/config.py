@@ -14,7 +14,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condD
 
 import FWCore.ParameterSet.VarParsing as VarParsing
 options = VarParsing.VarParsing()
-options.register("globalTag", "74X_dataRun2_Prompt_v1",
+options.register("globalTag", "80X_dataRun2_Prompt_v9",
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "GlobalTag to use")
@@ -23,6 +23,11 @@ options.parseArguments()
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(1000)
 )
+
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.suppressWarning.append("vertexPerformanceNtuple")
+#process.MessageLogger.categories.append("TwoTrackMinimumDistance")
+#process.MessageLogger.cerr.TwoTrackMinimumDistance = cms.untracked.PSet(limit = cms.untracked.int32(10))
 
 # In RelVals
 # 2012D: 208307
@@ -76,6 +81,17 @@ golden_run251251 = [
     "251251:99-251251:167",
 ]
 
+# file dataset=/JetHT/Run2016B-PromptReco-v2/AOD run=273725
+files_jetht_run273725 = [
+    "/store/data/Run2016B/JetHT/AOD/PromptReco-v2/000/273/725/00000/001837B2-7D20-E611-B10B-02163E011B2D.root",
+    "/store/data/Run2016B/JetHT/AOD/PromptReco-v2/000/273/725/00000/10A36775-8F20-E611-801D-02163E012143.root",
+    "/store/data/Run2016B/JetHT/AOD/PromptReco-v2/000/273/725/00000/2A022476-8B20-E611-9E4F-02163E01341C.root",
+]
+golden_run273725 = [
+    "273725:83-273725:252",
+    "273725:254-273725:2545",
+]
+
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(),
@@ -92,6 +108,8 @@ process.source = cms.Source("PoolSource",
 #del process.source.lumisToProcess
 #process.source.eventsToProcess = cms.untracked.VEventRange("254790:170:206530637")
 
+#process.source.fileNames = files_jetht_run273725
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange(golden_run273725)
 
 process.options = cms.untracked.PSet()
 
@@ -129,7 +147,7 @@ process.vertexPerformanceNtuple.triggers = ["HLT_IsoMu20_v2"]
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
-    dataVersion = "74xdata",
+    dataVersion = "80xdata",
     codeVersion = getCommitId(),
     energy = 13
 )
