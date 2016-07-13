@@ -101,7 +101,6 @@ private:
   void doResolution(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
   void doEfficiency(const std::vector<reco::TransientTrack>& tracks, CLHEP::HepRandomEngine& engine, const reco::BeamSpot& beamspot, const reco::Vertex& pv);
 
-  edm::EDGetTokenT<reco::TrackCollection> trackSrc_;
   edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
   edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
@@ -413,7 +412,6 @@ private:
 };
 
 VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfig):
-  trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("trackSrc"))),
   vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
   beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
   triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
@@ -473,7 +471,6 @@ VertexPerformanceNtuple::~VertexPerformanceNtuple() {}
 
 void VertexPerformanceNtuple::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.addUntracked<edm::InputTag>("trackSrc", edm::InputTag("generalTracks"));
   desc.addUntracked<edm::InputTag>("vertexSrc", edm::InputTag("offlinePrimaryVertices"));
   desc.addUntracked<edm::InputTag>("beamspotSrc", edm::InputTag("offlineBeamSpot"));
   desc.addUntracked<edm::InputTag>("triggerResultsSrc", edm::InputTag("TriggerResults", "", "HLT"));
@@ -574,10 +571,6 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
         path.value = trigger.accept(i);
     }
   }
-
-  edm::Handle<reco::TrackCollection> htracks;
-  iEvent.getByToken(trackSrc_, htracks);
-  const reco::TrackCollection& tracks = *htracks;
 
   edm::Handle<reco::VertexCollection> hvertices;
   iEvent.getByToken(vertexSrc_, hvertices);
