@@ -189,7 +189,7 @@ private:
       matchedSimVertices.clear(); matchedToSimPV.clear();
     }
 
-    std::vector<double> z;
+    std::vector<float> z;
     std::vector<int> ntracks;
     std::vector<bool> fake;
     std::vector<bool> valid;
@@ -280,18 +280,18 @@ private:
       matchedSimVertices.clear(); matchedToSimPV.clear();
     }
 
-    std::vector<double> x;
-    std::vector<double> y;
-    std::vector<double> z;
-    std::vector<double> rho;
-    std::vector<double> x_error;
-    std::vector<double> y_error;
-    std::vector<double> z_error;
-    std::vector<double> ndof;
-    std::vector<double> chi2;
+    std::vector<float> x;
+    std::vector<float> y;
+    std::vector<float> z;
+    std::vector<float> rho;
+    std::vector<float> x_error;
+    std::vector<float> y_error;
+    std::vector<float> z_error;
+    std::vector<float> ndof;
+    std::vector<float> chi2;
     std::vector<int> ntracks;
-    std::vector<double> sumpt;
-    std::vector<double> sumpt2;
+    std::vector<float> sumpt;
+    std::vector<float> sumpt2;
     std::vector<bool> fake;
     std::vector<bool> valid;
 
@@ -333,12 +333,12 @@ private:
       sumpt.clear(); sumpt2.clear();
     }
 
-    std::vector<double> x;
-    std::vector<double> y;
-    std::vector<double> z;
+    std::vector<float> x;
+    std::vector<float> y;
+    std::vector<float> z;
     std::vector<int> ntracks;
-    std::vector<double> sumpt;
-    std::vector<double> sumpt2;
+    std::vector<float> sumpt;
+    std::vector<float> sumpt2;
   };
 
   Beamspot b_bs;
