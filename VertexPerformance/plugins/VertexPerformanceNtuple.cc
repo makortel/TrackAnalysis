@@ -106,6 +106,7 @@ private:
   edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
   edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
 
+  const bool minimal_;
   const bool useTrackingParticles_;
   edm::EDGetTokenT<TrackingVertexCollection> trackingVertexSrc_;
 
@@ -416,6 +417,7 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
   vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
   beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
   triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
+  minimal_(iConfig.getUntrackedParameter<bool>("minimal")),
   useTrackingParticles_(iConfig.getUntrackedParameter<bool>("useTrackingParticles")),
   h_res_tracks_pv("res_pv"),
   h_res_tracks_set1("res_set1"),
@@ -460,9 +462,11 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
   h_res_tracks_pv.book(*fs);
   h_res_tracks_set1.book(*fs);
   h_res_tracks_set2.book(*fs);
-  h_eff_tracks_pv.book(*fs);
-  h_eff_tracks_setTag.book(*fs);
-  h_eff_tracks_setProbe.book(*fs);
+  if(!minimal_) {
+    h_eff_tracks_pv.book(*fs);
+    h_eff_tracks_setTag.book(*fs);
+    h_eff_tracks_setProbe.book(*fs);
+  }
 }
 
 VertexPerformanceNtuple::~VertexPerformanceNtuple() {}
@@ -475,6 +479,7 @@ void VertexPerformanceNtuple::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.addUntracked<edm::InputTag>("triggerResultsSrc", edm::InputTag("TriggerResults", "", "HLT"));
   desc.addUntracked<std::vector<std::string>>("triggers", std::vector<std::string>());
 
+  desc.addUntracked<bool>("minimal", false);
   desc.addUntracked<bool>("useTrackingParticles", false);
   desc.addUntracked<edm::InputTag>("trackingVertexSrc", edm::InputTag("mix", "MergedTrackTruth"));
 
@@ -499,12 +504,16 @@ void VertexPerformanceNtuple::book() {
 
   b_bs.book(tree, "bs");
 
-  tree->Branch("nsimvertices", &b_nsimvertices);
+  if(!minimal_) {
+    tree->Branch("nsimvertices", &b_nsimvertices);
+  }
   tree->Branch("nvertices", &b_nvertices);
   tree->Branch("nvertices_good", &b_nvertices_good);
 
   b_pv.book(tree, "pv", useTrackingParticles_);
-  b_puv.book(tree, "puv", useTrackingParticles_);
+  if(!minimal_) {
+    b_puv.book(tree, "puv", useTrackingParticles_);
+  }
   if(useTrackingParticles_) {
     b_simpv.book(tree, "simpv");
   }
@@ -515,11 +524,13 @@ void VertexPerformanceNtuple::book() {
   b_res_vertex2.book(tree, "res_vertex2");
   tree->Branch("res_vertex2_tracks_size", &b_res_vertex2_tracks_size);
 
-  b_eff_vertexTag.book(tree, "eff_vertexTag");
-  tree->Branch("eff_vertexTag_tracks_size", &b_eff_vertexTag_tracks_size);
+  if(!minimal_) {
+    b_eff_vertexTag.book(tree, "eff_vertexTag");
+    tree->Branch("eff_vertexTag_tracks_size", &b_eff_vertexTag_tracks_size);
 
-  b_eff_vertexProbe.book(tree, "eff_vertexProbe");
-  tree->Branch("eff_vertexProbe_tracks_size", &b_eff_vertexProbe_tracks_size);
+    b_eff_vertexProbe.book(tree, "eff_vertexProbe");
+    tree->Branch("eff_vertexProbe_tracks_size", &b_eff_vertexProbe_tracks_size);
+  }
 
   reset();
 }
@@ -652,7 +663,7 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
         });
 
       doResolution(ttracks, engine, beamspot, thePV);
-      if(thePV.tracksSize() >= 6) {
+      if(!minimal_ && thePV.tracksSize() >= 6) {
         doEfficiency(ttracks, engine, beamspot, thePV);
       }
     }
