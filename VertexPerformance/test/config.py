@@ -146,13 +146,14 @@ process.RandomNumberGeneratorService.vertexPerformanceNtuple = cms.PSet(
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
+#process.vertexPerformanceNtuple.triggerResultsSrc.setProcessName("HLT2") # for newcond RelVal
 process.vertexPerformanceNtuple.triggers = [
     "HLT_PFHT800_v1",
     "HLT_PFHT800_v2",
     "HLT_PFHT800_v3",
     "HLT_PFHT800_v4"
 ]
-process.vertexPerformanceNtuple.minimal = True
+#process.vertexPerformanceNtuple.minimal = True
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
