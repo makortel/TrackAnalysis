@@ -22,6 +22,7 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/Scalers/interface/LumiScalers.h"
 
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
@@ -104,6 +105,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   edm::EDGetTokenT<reco::BeamSpot> beamspotSrc_;
   edm::EDGetTokenT<edm::TriggerResults> triggerSrc_;
+  edm::EDGetTokenT<LumiScalersCollection> lumiScalersSrc_;
 
   const bool minimal_;
   const bool useTrackingParticles_;
@@ -117,6 +119,8 @@ private:
   edm::RunNumber_t b_run;
   edm::LuminosityBlockNumber_t b_lumi;
   edm::EventNumber_t b_event;
+
+  float b_lumi_scal;
 
   int b_nsimvertices;
   int b_nvertices;
@@ -415,6 +419,7 @@ VertexPerformanceNtuple::VertexPerformanceNtuple(const edm::ParameterSet& iConfi
   vertexSrc_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"))),
   beamspotSrc_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspotSrc"))),
   triggerSrc_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultsSrc"))),
+  lumiScalersSrc_(consumes<LumiScalersCollection>(iConfig.getUntrackedParameter<edm::InputTag>("lumiScalersSrc"))),
   minimal_(iConfig.getUntrackedParameter<bool>("minimal")),
   useTrackingParticles_(iConfig.getUntrackedParameter<bool>("useTrackingParticles")),
   h_res_tracks_pv("res_pv"),
@@ -474,6 +479,7 @@ void VertexPerformanceNtuple::fillDescriptions(edm::ConfigurationDescriptions& d
   desc.addUntracked<edm::InputTag>("vertexSrc", edm::InputTag("offlinePrimaryVertices"));
   desc.addUntracked<edm::InputTag>("beamspotSrc", edm::InputTag("offlineBeamSpot"));
   desc.addUntracked<edm::InputTag>("triggerResultsSrc", edm::InputTag("TriggerResults", "", "HLT"));
+  desc.addUntracked<edm::InputTag>("lumiScalersSrc", edm::InputTag("scalersRawToDigi"));
   desc.addUntracked<std::vector<std::string>>("triggers", std::vector<std::string>());
 
   desc.addUntracked<bool>("minimal", false);
@@ -494,6 +500,8 @@ void VertexPerformanceNtuple::book() {
   tree->Branch("run", &b_run);
   tree->Branch("lumi", &b_lumi);
   tree->Branch("event", &b_event);
+
+  tree->Branch("lumi_scal", &b_lumi_scal);
 
   for(auto& trigger: b_triggers) {
     trigger.book(tree, "trig_");
@@ -534,6 +542,9 @@ void VertexPerformanceNtuple::book() {
 
 void VertexPerformanceNtuple::reset() {
   b_run=0; b_lumi=0; b_event=0;
+
+  b_lumi_scal=0.f;
+
   for(auto& trigger: b_triggers) {
     trigger.reset();
   }
@@ -580,6 +591,10 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   iEvent.getByToken(beamspotSrc_, hbeamspot);
   const reco::BeamSpot& beamspot = *hbeamspot;
 
+  edm::Handle<LumiScalersCollection> hscalers;
+  iEvent.getByToken(lumiScalersSrc_, hscalers);
+  const LumiScalersCollection& lumiScalers = *hscalers;
+
   const TrackingVertex *simPV = nullptr;
   std::vector<const TrackingVertex *> trackingVertices;
   if(useTrackingParticles_) {
@@ -610,6 +625,10 @@ void VertexPerformanceNtuple::analyze(const edm::Event& iEvent, const edm::Event
   b_run = iEvent.id().run();
   b_lumi = iEvent.id().luminosityBlock();
   b_event = iEvent.id().event();
+
+  if(!lumiScalers.empty()) {
+    b_lumi_scal = lumiScalers.front().instantLumi();
+  }
 
   b_nsimvertices = trackingVertices.size();
   b_nvertices = vertices.size();
