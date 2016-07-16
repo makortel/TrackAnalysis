@@ -219,6 +219,7 @@ private:
       tree->Branch((prefix+"_ndof").c_str(), &ndof);
       tree->Branch((prefix+"_chi2").c_str(), &chi2);
       tree->Branch((prefix+"_ntracks").c_str(), &ntracks);
+      tree->Branch((prefix+"_ntracks_bpix1_nohit").c_str(), &ntracks_bpix1_nohit);
       tree->Branch((prefix+"_sumpt").c_str(), &sumpt); 
       tree->Branch((prefix+"_sumpt2").c_str(), &sumpt2);
 
@@ -232,13 +233,18 @@ private:
       appendInt(vertex);
 
       double sumpt_=0, sumpt2_=0;
+      int n_bpix1_nohit = 0;
       for(auto iTrack = vertex.tracks_begin(); iTrack != vertex.tracks_end(); ++iTrack) {
         const auto pt = (*iTrack)->pt();
         sumpt_ += pt;
         sumpt2_ += pt*pt;
+        if(!(*iTrack)->hitPattern().hasValidHitInFirstPixelBarrel()) {
+          ++n_bpix1_nohit;
+        }
       }
       sumpt.push_back(sumpt_);
       sumpt2.push_back(sumpt2_);
+      ntracks_bpix1_nohit.push_back(n_bpix1_nohit);
 
       if(!trackingVertices.empty()) {
         matchedSimVertices.push_back(matchVertices(vertex, trackingVertices).size());
@@ -250,13 +256,18 @@ private:
       appendInt(vertex);
 
       double sumpt_=0, sumpt2_=0;
+      int n_bpix1_nohit = 0;
       for(const auto& track: vertex.originalTracks()) {
         const auto pt = track.track().pt();
         sumpt_ += pt;
         sumpt2_ += pt*pt;
+        if(!track.hitPattern().hasValidHitInFirstPixelBarrel()) {
+          ++n_bpix1_nohit;
+        }
       }
       sumpt.push_back(sumpt_);
       sumpt2.push_back(sumpt2_);
+      ntracks_bpix1_nohit.push_back(n_bpix1_nohit);
     }
 
     void appendInt(const reco::Vertex& vertex) {
@@ -278,6 +289,7 @@ private:
       x.clear(); y.clear(); z.clear(); rho.clear();
       x_error.clear(); y_error.clear(); z_error.clear();
       ndof.clear(); chi2.clear(); ntracks.clear();
+      ntracks_bpix1_nohit.clear();
       sumpt.clear(); sumpt2.clear();
       fake.clear(); valid.clear();
 
@@ -294,6 +306,7 @@ private:
     std::vector<float> ndof;
     std::vector<float> chi2;
     std::vector<int> ntracks;
+    std::vector<int> ntracks_bpix1_nohit;
     std::vector<float> sumpt;
     std::vector<float> sumpt2;
     std::vector<bool> fake;
