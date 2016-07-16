@@ -18,11 +18,15 @@ options.register("globalTag", "80X_dataRun2_Prompt_v9",
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "GlobalTag to use")
+options.register("hltProcess", "HLT",
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.string,
+                 "HLT process to use")
 options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet(
-#    input = cms.untracked.int32(1000)
-    input = cms.untracked.int32(10000)
+    input = cms.untracked.int32(1000)
+#    input = cms.untracked.int32(10000)
 )
 
 process.MessageLogger.cerr.FwkReport.reportEvery = 500
@@ -146,14 +150,14 @@ process.RandomNumberGeneratorService.vertexPerformanceNtuple = cms.PSet(
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
-#process.vertexPerformanceNtuple.triggerResultsSrc.setProcessName("HLT2") # for newcond RelVal
+process.vertexPerformanceNtuple.triggerResultsSrc.setProcessName(options.hltProcess)
 process.vertexPerformanceNtuple.triggers = [
     "HLT_PFHT800_v1",
     "HLT_PFHT800_v2",
     "HLT_PFHT800_v3",
     "HLT_PFHT800_v4"
 ]
-#process.vertexPerformanceNtuple.minimal = True
+process.vertexPerformanceNtuple.minimal = True
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(
