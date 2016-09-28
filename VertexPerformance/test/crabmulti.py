@@ -8,7 +8,8 @@ from WMCore.Configuration import Configuration
 from httplib import HTTPException
 
 #multitaskdir = 'vtx_singlemuon_v2'
-multitaskdir = 'vtx_jetht_v10'
+#multitaskdir = 'vtx_jetht_v11_2'
+multitaskdir = 'vtx_zerobias_v3_1'
 #multitaskdir = 'vtx_jetht_doublemuon_v4'
 baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_80x/'+multitaskdir
 eosDir = '/eos/cms'+baseDir
@@ -66,13 +67,16 @@ def main():
     config.section_("Data")
     config.Data.inputDataset = 'Dummy'
     config.Data.splitting = 'EventAwareLumiBased'
-    config.Data.unitsPerJob = 100000
+    #config.Data.unitsPerJob = 100000
+    config.Data.unitsPerJob = 1000000
 #    config.Data.unitsPerJob = 500000  # for full stats
     config.Data.outLFNDirBase = baseDir
     config.Data.publication = False
 
     config.section_("Site")
     config.Site.storageSite = 'T2_CH_CERN'
+    #config.Site.whitelist = ["T2_CH_CERN"]
+    #config.Site.whitelist = ["T3_CH_CERN_CAF"]
 
     #############################################################################################
     ## From now on that's what users should modify: this is the a-la-CRAB2 configuration part. ##
@@ -114,17 +118,17 @@ def main():
 #    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
 #    submit(config)
 
-    config.General.requestName = 'JetHT_Run2016B_274199'
-    config.Data.inputDataset = "/JetHT/Run2016B-PromptReco-v2/AOD"
-    config.Data.lumiMask = 'json_run_274199.txt'
-    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
-    submit(config)
+#    config.General.requestName = 'JetHT_Run2016B_274199'
+#    config.Data.inputDataset = "/JetHT/Run2016B-PromptReco-v2/AOD"
+#    config.Data.lumiMask = 'json_run_274199.txt'
+#    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
+#    submit(config)
 
-    config.General.requestName = 'JetHT_Run2016B_274199_newcond'
-    config.Data.inputDataset = "/JetHT/CMSSW_8_0_14-80X_dataRun2_relval_v15_RelVal_jetHT2016B-v1/RECO"
-    config.Data.lumiMask = 'json_run_274199.txt'
-    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_relval_v15", "hltProcess=HLT2"]
-    submit(config)
+#    config.General.requestName = 'JetHT_Run2016B_274199_newcond'
+#    config.Data.inputDataset = "/JetHT/CMSSW_8_0_14-80X_dataRun2_relval_v15_RelVal_jetHT2016B-v1/RECO"
+#    config.Data.lumiMask = 'json_run_274199.txt'
+#    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_relval_v15"]
+#    submit(config)
 
 #    config.General.requestName = 'DoubleMuon_Run2016B_274160'
 #    config.Data.inputDataset = "/DoubleMuon/Run2016B-PromptReco-v2/AOD"
@@ -138,12 +142,26 @@ def main():
 #    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_PromptValidation_forPostTS1_2016_v1"]
 #    submit(config)
 
-    config.General.requestName = 'JetHT_Run2016B_v2'
-    config.Data.inputDataset = "/JetHT/Run2016B-PromptReco-v2/AOD"
-    config.Data.lumiMask = 'Cert_271036-275783_13TeV_PromptReco_Collisions16_JSON.txt'
-    config.Data.unitsPerJob = 500000
-    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
-    submit(config)
+#    config.General.requestName = 'JetHT_Run2016B_v2'
+#    config.Data.inputDataset = "/JetHT/Run2016B-PromptReco-v2/AOD"
+#    config.Data.lumiMask = 'Cert_271036-275783_13TeV_PromptReco_Collisions16_JSON.txt'
+#    config.Data.unitsPerJob = 500000
+#    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
+#    submit(config)
+
+
+    # works better for the ZeroBias
+    config.Data.splitting = 'LumiBased'
+    config.Data.unitsPerJob = 20
+
+    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(0, 9)]:
+    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(1, 9)]:
+    for zb in ["ZeroBias%d" % x for x in xrange(1, 9)]:
+        config.General.requestName = '%s_Run2016B_274100' % zb
+        config.Data.inputDataset = "/%s/Run2016B-PromptReco-v2/RECO" % zb
+        config.Data.lumiMask = 'json_run_274100.txt'
+        config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
+        submit(config)
 
 
 if __name__ == '__main__':
