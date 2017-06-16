@@ -14,7 +14,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condD
 
 import FWCore.ParameterSet.VarParsing as VarParsing
 options = VarParsing.VarParsing()
-options.register("globalTag", "80X_mcRun2_asymptotic_v14",
+options.register("globalTag", "80X_mcRun2_asymptotic_2016_TrancheIV_v2",
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.string,
                  "GlobalTag to use")
@@ -66,12 +66,51 @@ files_zmm_mc_digi = [
 "/store/relval/CMSSW_7_4_6_patch6/RelValZMM_13/GEN-SIM-DIGI-RAW-HLTDEBUG/PU50ns_MCRUN2_74_V8_unsch_noCCC_v3-v1/00000/F4498A71-E52B-E511-98CC-0025905A48D8.root",
 ]
 
+# dataset=/RelValMinBias_13/CMSSW_8_0_20-80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/GEN-SIM-RECO
+files_minbias_mc = [
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/244821BA-AF7A-E611-A9BB-0CC47A7C3430.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/32B096FD-BC7A-E611-B6C6-0CC47A4D76CC.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/34B5BAE6-AD7A-E611-B9F8-0025905A60CA.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/4074A462-AF7A-E611-A1D6-0025905A48BA.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/467F7798-AE7A-E611-8E71-0025905A6092.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-RECO/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/900310B4-BD7A-E611-B9AE-0CC47A4D769E.root",
+]
+files_minbias_mc_digi = [
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/0C960945-A77A-E611-92F3-0CC47A4C8EE2.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/0E92984E-A77A-E611-8693-0025905A6088.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/10853DA5-A77A-E611-AD61-0025905A609E.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/1CA8761F-A77A-E611-928B-0CC47A4C8E0E.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/20291150-A77A-E611-A76B-0CC47A7452D0.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/261686F7-A67A-E611-BB06-0CC47A7C35F8.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/2A96E6A3-A77A-E611-A1D4-0025905B85CA.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/42A36AFB-A67A-E611-8927-0CC47A4D763C.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/5E79ABF5-A67A-E611-A162-0CC47A7C3434.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/769FDA46-A77A-E611-9409-0CC47A4D76B2.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/A03B2A04-A77A-E611-88D3-003048FFD7CE.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/AEC02BFC-A67A-E611-BE5A-0025905B856E.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/B2E945FB-A67A-E611-892B-0025905A6126.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/B86205FE-A67A-E611-A177-0025905A497A.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/C4275D57-A77A-E611-9E6C-0025905A613C.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/C44368F9-A67A-E611-89FC-0CC47A7C3636.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/CA0F0053-A77A-E611-92B3-0CC47A7C35A8.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/D2B41AFA-A67A-E611-A90E-0025905A605E.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/D2DFE3F6-A67A-E611-8FBC-0CC47A4C8E64.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/D40BA7FB-A67A-E611-B65F-0025905B85B2.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/D80FB3F6-A67A-E611-8618-0CC47A78A3EC.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/F0BC98FB-A67A-E611-B23F-0025905A6126.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/F8537318-A77A-E611-A2C4-0CC47A4C8E0E.root",
+    "/store/relval/CMSSW_8_0_20/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/80X_mcRun2_asymptotic_2016_TrancheIV_v2_Tr4GT_v2-v1/00000/FC44D8FA-A67A-E611-A702-0025905A6094.root",
+]
+
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(),
 )
-process.source.fileNames = files_zmm_mc
-process.source.secondaryFileNames = cms.untracked.vstring(*files_zmm_mc_digi)
+#process.source.fileNames = files_zmm_mc
+#process.source.secondaryFileNames = cms.untracked.vstring(*files_zmm_mc_digi)
+process.source.fileNames = files_minbias_mc
+process.source.secondaryFileNames = cms.untracked.vstring(*files_minbias_mc_digi)
+
 # golden json
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange("254790:90",
 #                                                                    "254790:93-254790:208",
@@ -119,8 +158,9 @@ process.RandomNumberGeneratorService.vertexPerformanceNtuple = cms.PSet(
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceNtuple_cfi")
 process.vertexPerformanceNtuple.TkClusParameters = cms.untracked.PSet(**process.unsortedOfflinePrimaryVertices.TkClusParameters.parameters_())
-process.vertexPerformanceNtuple.triggers = ["HLT_IsoMu20_v1"]
+#process.vertexPerformanceNtuple.triggers = ["HLT_IsoMu20_v1"]
 process.vertexPerformanceNtuple.useTrackingParticles = True
+process.vertexPerformanceNtuple.minimal = True
 
 process.load("TrackAnalysis/VertexPerformance/vertexPerformanceConfigInfo_cfi")
 process.configInfo = process.vertexPerformanceConfigInfo.clone(

@@ -9,9 +9,10 @@ from httplib import HTTPException
 
 #multitaskdir = 'vtx_singlemuon_v2'
 #multitaskdir = 'vtx_jetht_v11_2'
-multitaskdir = 'vtx_zerobias_v3_1'
+#multitaskdir = 'vtx_zerobias_v3_1'
 #multitaskdir = 'vtx_jetht_doublemuon_v4'
-baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_80x/'+multitaskdir
+multitaskdir = 'vtx_jetht_rereco_v1'
+baseDir = '/store/group/cmst3/user/mkortela/crab/vertexPerformance_80x_rereco/'+multitaskdir
 eosDir = '/eos/cms'+baseDir
 
 eos = '/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select'
@@ -19,11 +20,11 @@ eos = '/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select'
 def _execute(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, error) = p.communicate()
-    return p.returncode
+    return (output, error, p.returncode)
 def _executeThrow(cmd):
-    ret = _execute(cmd)    
+    (output, error, ret) = _execute(cmd)
     if ret != 0:
-        raise Exception("Ran '%s', got exitcode with output\n%s\n%s" % (" ".join(cmd), ret, output, error))
+        raise Exception("Ran '%s', got exitcode %d with output\n%s\n%s" % (" ".join(cmd), ret, output, error))
     print "Created eos dir", eosDir
 
 
@@ -149,19 +150,55 @@ def main():
 #    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
 #    submit(config)
 
+    config.General.requestName = 'JetHT_Run2016B_273158'
+    config.Data.inputDataset = "/JetHT/Run2016B-23Sep2016-v3/AOD"
+    config.Data.lumiMask = 'json_run_273158.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v4"]
+    submit(config)
 
-    # works better for the ZeroBias
-    config.Data.splitting = 'LumiBased'
-    config.Data.unitsPerJob = 20
+    config.General.requestName = 'JetHT_Run2016C_276244'
+    config.Data.inputDataset = "/JetHT/Run2016C-23Sep2016-v1/AOD"
+    config.Data.lumiMask = 'json_run_276244.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v3"]
+    submit(config)
 
-    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(0, 9)]:
-    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(1, 9)]:
-    for zb in ["ZeroBias%d" % x for x in xrange(1, 9)]:
-        config.General.requestName = '%s_Run2016B_274100' % zb
-        config.Data.inputDataset = "/%s/Run2016B-PromptReco-v2/RECO" % zb
-        config.Data.lumiMask = 'json_run_274100.txt'
-        config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
-        submit(config)
+    config.General.requestName = 'JetHT_Run2016D_276811'
+    config.Data.inputDataset = "/JetHT/Run2016D-23Sep2016-v1/AOD"
+    config.Data.lumiMask = 'json_run_276811.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v4"]
+    submit(config)
+
+    config.General.requestName = 'JetHT_Run2016E_277194'
+    config.Data.inputDataset = "/JetHT/Run2016E-23Sep2016-v1/AOD"
+    config.Data.lumiMask = 'json_run_277194.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v4"]
+    submit(config)
+
+    config.General.requestName = 'JetHT_Run2016F_278808'
+    config.Data.inputDataset = "/JetHT/Run2016F-23Sep2016-v1/AOD"
+    config.Data.lumiMask = 'json_run_278808.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v4"]
+    submit(config)
+
+    config.General.requestName = 'JetHT_Run2016G_280385'
+    config.Data.inputDataset = "/JetHT/Run2016G-23Sep2016-v1/AOD"
+    config.Data.lumiMask = 'json_run_280385.txt'
+    config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_2016SeptRepro_v4"]
+    submit(config)
+
+
+#    # works better for the ZeroBias
+#    config.Data.splitting = 'LumiBased'
+#    config.Data.unitsPerJob = 20
+#
+#    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(0, 9)]:
+#    #for zb in ["ZeroBias"] + ["ZeroBias%d" % x for x in xrange(1, 9)]:
+#    for zb in ["ZeroBias%d" % x for x in xrange(1, 9)]:
+#        config.General.requestName = '%s_Run2016B_274100' % zb
+#        config.Data.inputDataset = "/%s/Run2016B-PromptReco-v2/RECO" % zb
+#        config.Data.lumiMask = 'json_run_274100.txt'
+#        config.JobType.pyCfgParams = ["globalTag=80X_dataRun2_Prompt_v9"]
+#        submit(config)
 
 
 if __name__ == '__main__':
